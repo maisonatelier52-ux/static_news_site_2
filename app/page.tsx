@@ -37,25 +37,37 @@ export default function Home() {
   const all = getPublishedArticles();
   const categories = getAllCategories();
 
+  /*
+   * CURSOR-BASED SLICING
+   *
+   * Instead of hard-coded indices (all[10], all.slice(15, 20)...),
+   * `take(n)` pulls the next `n` available articles and moves the
+   * cursor forward. If fewer than `n` remain, it just returns what's
+   * left (never undefined-filled gaps). This means the page degrades
+   * gracefully with a small dataset and automatically uses more
+   * content as you add it — no index math to update by hand.
+   *
+   * Feel free to tune these counts up as your article count grows.
+   */
+  let cursor = 0;
+  const take = (count: number) => {
+    const slice = all.slice(cursor, cursor + count);
+    cursor += slice.length;
+    return slice;
+  };
+
   /* HERO */
 
-  const lead = all[0];
-  const centerFeature = all[1];
-  const moreOnThis = all.slice(2, 4);
-  const perspectives = all.slice(4, 9);
+  const [lead] = take(1);
+  const [centerFeature] = take(1);
+  const moreOnThis = take(2);
+  const perspectives = take(5);
 
   /* TOP STORIES */
 
-  const topFeature = all[10];
-  const topList = all.slice(11, 15);
-
-  const mostRead = [
-    all[15],
-    all[16],
-    all[17],
-    all[18],
-    all[19]
-  ].filter(Boolean);
+  const [topFeature] = take(1);
+  const topList = take(4);
+  const mostRead = take(5);
 
   /*
    * ARTICLES ALREADY DISPLAYED ABOVE CATEGORY PAIRS
@@ -74,7 +86,7 @@ export default function Home() {
       ...mostRead,
     ]
       .filter(Boolean)
-      .map((article) => article.slug)
+      .map((article) => article!.slug)
   );
 
   /* CATEGORY PAIRS */
@@ -131,11 +143,8 @@ export default function Home() {
    *
    * Take articles that have not already appeared above.
    */
-  const 
-  quad = all
-    .filter(
-      (article) =>
-        !usedArticleSlugs.has(article.slug) )
+  const quad = all
+    .filter((article) => !usedArticleSlugs.has(article.slug))
     .slice(0, 4);
 
   /* Latest News */
@@ -162,7 +171,7 @@ export default function Home() {
     ...moreOnThis,
     topFeature,
     ...topList,
-  ].filter(Boolean);
+  ].filter(Boolean) as typeof all;
 
   const collectionJsonLd = {
     "@context": "https://schema.org",
@@ -192,32 +201,31 @@ export default function Home() {
 
   return (
     <>
-      <JsonLd
-        data={[
-          collectionJsonLd,
-          itemListJsonLd,
-        ]}
-      />
+      <JsonLd data={[collectionJsonLd, itemListJsonLd]} />
 
       <Header />
 
       <main>
-        {/* HERO */}
+        {/* HERO — only render once we actually have a lead + center feature */}
 
-        <HeroSection
-          lead={lead}
-          centerFeature={centerFeature}
-          moreOnThis={moreOnThis}
-          perspectives={perspectives}
-        />
+        {lead && centerFeature && (
+          <HeroSection
+            lead={lead}
+            centerFeature={centerFeature}
+            moreOnThis={moreOnThis}
+            perspectives={perspectives}
+          />
+        )}
 
-        {/* TOP STORIES */}
+        {/* TOP STORIES — only render once we have a feature article */}
 
-        <TopStoriesRow
-          feature={topFeature}
-          list={topList}
-          mostRead={mostRead}
-        />
+        {topFeature && (
+          <TopStoriesRow
+            feature={topFeature}
+            list={topList}
+            mostRead={mostRead}
+          />
+        )}
 
         {/* CATEGORY PAIRS */}
 
@@ -233,11 +241,7 @@ export default function Home() {
           }
 
           return (
-            <CategoryPair
-              key={`${catA}-${catB}`}
-              left={left}
-              right={right}
-            />
+            <CategoryPair key={`${catA}-${catB}`} left={left} right={right} />
           );
         })}
 
@@ -247,18 +251,11 @@ export default function Home() {
 
         {/* EDITOR'S PICKS */}
 
-        {quad.length > 0 && (
-          <QuadRow
-            title="Editor's Picks"
-            articles={quad}
-          />
-        )}
+        {quad.length > 0 && <QuadRow title="Editor's Picks" articles={quad} />}
 
         {/* LATEST NEWS  */}
 
-        {river.length > 0 && (
-          <LatestRiver articles={river} />
-        )}
+        {river.length > 0 && <LatestRiver articles={river} />}
       </main>
 
       <Footer />

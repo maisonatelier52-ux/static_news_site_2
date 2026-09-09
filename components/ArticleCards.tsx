@@ -38,7 +38,7 @@ export function LeadFeature({ article }: { article: Article }) {
 
         {author && (
           <div className="mt-5 flex items-center gap-3">
-            <Link href={`/authors/${author.slug
+            <Link href={`/author/${author.slug
             }`} className="group flex gap-3">
               <div className="h-11 w-11 flex-none overflow-hidden rounded-full bg-neutral-100">
                 <ArticleImage
